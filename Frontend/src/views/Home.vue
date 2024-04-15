@@ -1,9 +1,7 @@
 <template>
     <div>
-        <!-- Filter card -->
         <div class="card">
             <div class="card-content">
-                <!-- Filter dropdown -->
                 <div class="select mb-2">
                     <select v-model="currentCategory">
                         <option value="">All Categories</option>
@@ -12,23 +10,19 @@
                         </option>
                     </select>
                 </div>
-                <!-- Reset button -->
                 <button class="button is-danger is-light" @click="resetFilter">
                     Reset
                 </button>
             </div>
         </div>
-        <!-- Auction cards -->
         <div class="columns is-multiline is-mobile mt-4">
             <div v-for="auction in filteredAuctions" :key="auction.productId" class="column is-one-quarter">
                 <div class="card" :id="'card-' + auction.productId" @mouseenter="showBidButton(auction)"
                     @mouseleave="hideBidButton(auction)">
-                    <!-- Bid button -->
                     <button v-if="auction.showBidButton" class="button is-primary bid-button"
                         @click="flipCard(auction)">
                         Bid
                     </button>
-                    <!-- Front of the card -->
                     <div v-if="!auction.isFlipped" class="card-content" :class="{ 'card-blur': auction.showBidButton }">
                         <div class="media">
                             <div class="media-content">
@@ -40,7 +34,6 @@
                             <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
                         </div>
                     </div>
-                    <!-- Back of the card -->
                     <div v-else class="card-content">
                         <div class="media">
                             <div class="media-content">
@@ -92,14 +85,21 @@ export default {
     },
     mounted() {
         this.fetchAuctions();
-        // Automatically update auctions every second
-        setInterval(this.updateAuctions, 1000);
+        setInterval(() => {
+            this.updateAuctionEndDates();
+        }, 1000);
+        setInterval(() => {
+            this.fetchAuctions();
+        }, 5000);
     },
     methods: {
         async fetchAuctions() {
             try {
                 const response = await axios.get("http://localhost:3000/api/auctions");
-                this.auctions = response.data;
+                console.log("Response data:", response.data);
+                const newAuctions = response.data.filter(newAuction => !this.auctions.some(auction => auction.productId === newAuction.productId));
+                console.log("New auctions:", newAuctions);
+                this.auctions = [...this.auctions, ...newAuctions];
                 this.extractCategories();
             } catch (error) {
                 console.error("Error fetching auctions:", error);
@@ -121,40 +121,42 @@ export default {
         getRemainingTime(auction) {
             const endDate = new Date(auction.biddingEndDate);
             const now = new Date();
-            const diff = endDate - now;
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((diff % (1000 * 60)) / 1000); // Remaining seconds
-            return `${minutes} minutes ${seconds} seconds`;
-        },
-        showBidButton(auction) {
-            auction.showBidButton = !auction.isFlipped; // Only show bid button if the card is not flipped
-        },
-        hideBidButton(auction) {
-            auction.showBidButton = false;
+            if (endDate <= now) {
+                return 'Auction ended';
+            } else {
+                const diff = endDate - now;
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                return `${minutes} minutes ${seconds} seconds`;
+            }
         },
         flipCard(auction) {
-            console.log("Flipping card for auction:", auction.productId);
-            auction.isFlipped = !auction.isFlipped; // Toggle flipped state
-            auction.bidded = true;
-            console.log("isFlipped:", auction.isFlipped); // Log the value of isFlipped
+            auction.isFlipped = !auction.isFlipped;
+            auction.showBidButton = false;
         },
         confirmBid(auction) {
-            // Handle bid confirmation
         },
         undoBid(auction) {
             auction.isFlipped = false;
         },
-        updateAuctions() {
-            // Update auctions every second
-            this.auctions.forEach((auction) => {
+        updateAuctionEndDates() {
+            const now = new Date();
+            this.auctions = this.auctions.filter(auction => {
                 const endDate = new Date(auction.biddingEndDate);
-                const now = new Date();
-                if (endDate <= now) {
-                    // If the bidding end date is reached, update the auction
-                    this.fetchAuctions();
-                }
+                return endDate > now;
             });
         },
+        updateRemainingTime() {
+            this.auctions.forEach(auction => {
+                auction.remainingTime = this.getRemainingTime(auction);
+            });
+        },
+        showBidButton(auction) {
+            auction.showBidButton = !auction.isFlipped; 
+        },
+        hideBidButton(auction) {
+            auction.showBidButton = false;
+        }
     },
     computed: {
         filteredAuctions() {
@@ -166,6 +168,9 @@ export default {
     },
 };
 </script>
+
+
+
 <style scoped>
 .card {
     position: relative;
