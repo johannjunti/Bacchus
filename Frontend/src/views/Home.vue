@@ -2,38 +2,36 @@
     <div>
         <div>
             <MainNav @signup="showSignUpModal" @login="showLoginModal" />
-
-            <!-- Sign Up / Login Modal -->
             <b-modal v-model="modalActive" :can-cancel="['escape', 'click', 'outside']">
                 <div class="modal-container">
                     <div class="modal-card">
                         <header class="modal-card-head">
-                            <p class="modal-card-title">{{ modalTitle }}</p>
+                            <h1 class="modal-card-title">{{ modalTitle }}</h1>
                             <button class="delete" aria-label="close" @click="closeModals"></button>
                         </header>
                         <section class="modal-card-body">
-                            <LoginSignUpForm @close="closeModals" :isSignUp="isSignUp" />
+                            <LoginSignUpForm :is-sign-up="isSignUp" @toggle-form="toggleForm" />
                         </section>
                     </div>
                 </div>
             </b-modal>
-
         </div>
         <div>
             <div class="select mb-2">
-                <select v-model="currentCategory">
-                    <option value="">All Categories</option>
-                    <option v-for="category in categories" :key="category" :value="category">
+                <b-dropdown aria-role="list" v-model="currentCategory">
+                    <template #trigger>
+                        <b-button :label="selectedCategoryLabel" :icon-right="dropdownActive ? 'menu-up' : 'menu-down'"
+                            type="is-info" />
+                    </template>
+
+                    <b-dropdown-item aria-role="listitem" value="">All Categories</b-dropdown-item>
+                    <b-dropdown-item aria-role="listitem" v-for="category in categories" :key="category"
+                        :value="category">
                         {{ category }}
-                    </option>
-                </select>
+                    </b-dropdown-item>
+                </b-dropdown>
             </div>
             <button class="button is-danger is-light" @click="resetFilter">Reset</button>
-            <div class="columns is-multiline is-mobile mt-4">
-                <div v-for="auction in filteredAuctions" :key="auction.productId" class="column is-one-quarter">
-                    <!-- Card content -->
-                </div>
-            </div>
         </div>
         <div>
             <div class="columns is-multiline is-mobile mt-4">
@@ -87,7 +85,6 @@
                 </div>
             </div>
         </div>
-        <InputCard v-if="isInputCardVisible" @hideInputCard="hideInputCard" />
     </div>
 </template>
 
@@ -108,8 +105,10 @@ export default {
             categories: [],
             currentCategory: null,
             modalActive: false,
-            isSignUp: false,
-            modalTitle: ""
+            modalTitle: "Sign Up",
+            isSignUp: false, // Initialize as false for login
+            isFormVisible: false,
+            dropdownActive: false,
         };
     },
     mounted() {
@@ -125,11 +124,9 @@ export default {
         async fetchAuctions() {
             try {
                 const response = await axios.get("http://localhost:3000/api/auctions");
-                console.log("Response data:", response.data);
                 const newAuctions = response.data.filter(
                     (newAuction) => !this.auctions.some((auction) => auction.productId === newAuction.productId)
                 );
-                console.log("New auctions:", newAuctions);
                 this.auctions = [...this.auctions, ...newAuctions];
                 this.extractCategories();
             } catch (error) {
@@ -165,7 +162,9 @@ export default {
             auction.isFlipped = !auction.isFlipped;
             auction.showBidButton = false;
         },
-        confirmBid(auction) { },
+        confirmBid(auction) {
+
+        },
         undoBid(auction) {
             auction.isFlipped = false;
         },
@@ -182,23 +181,25 @@ export default {
             });
         },
         showSignUpModal() {
+            console.log("Showing sign-up modal");
             this.isSignUp = true;
             this.modalTitle = "Sign Up";
             this.modalActive = true;
         },
+
         showLoginModal() {
+            console.log("Showing login modal");
             this.isSignUp = false;
             this.modalTitle = "Login";
             this.modalActive = true;
         },
         closeModals() {
+            this.isFormVisible = false;
             this.modalActive = false;
         },
-        showInputCard() {
-            this.isInputCardVisible = true;
-        },
-        hideInputCard() {
-            this.isInputCardVisible = false;
+        toggleForm(isSignUp) {
+            this.isSignUp = isSignUp;
+            this.modalTitle = isSignUp ? "Sign Up" : "Login";
         },
         showBidButton(auction) {
             auction.showBidButton = !auction.isFlipped;
@@ -211,12 +212,15 @@ export default {
         filteredAuctions() {
             if (!this.currentCategory) return this.auctions;
             return this.auctions.filter((auction) => auction.productCategory === this.currentCategory);
-        }
+        },
+        selectedCategoryLabel() {
+            return this.currentCategory ? this.currentCategory : 'All Categories';
+        },
     }
 };
 </script>
 
-<style scoped>
+<style>
 .select {
     margin-left: 20px;
 }
@@ -224,7 +228,33 @@ export default {
 .card {
     position: relative;
     transition: transform 0.5s;
+    min-width: 400px;
 }
+
+@media (max-width: 1600px) {
+    .columns.is-multiline.is-mobile .column.is-one-quarter {
+        width: calc(100% / 3);
+        padding: 10px;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 1200px) {
+    .columns.is-multiline.is-mobile .column.is-one-quarter {
+        width: calc(100% / 2);
+        padding: 10px;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 800px) {
+    .columns.is-multiline.is-mobile .column.is-one-quarter {
+        width: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+}
+
 
 .card-content {
     transition: filter 0.5s;
@@ -258,20 +288,41 @@ export default {
     margin-bottom: 20px;
 }
 
+
 .modal-container {
+    width: 100%;
+    /* Ensure it takes the full width of the parent */
+    height: 100%;
+    /* Ensure it takes the full height of the parent */
     display: flex;
     justify-content: center;
     align-items: center;
+    position: fixed;
+    /* Position the container relative to the viewport */
+    top: 0;
+    /* Align to the top of the viewport */
+    left: 0;
+    /* Align to the left of the viewport */
+    z-index: 9999;
+    /* Ensure it appears on top of other content */
 }
 
 .modal-card {
-    border-radius: 20px;
-    /* Increased border-radius for rounder edges */
+    border-radius: 5px;
     width: 400px;
     height: 500px;
 }
 
-/* Hide body scroll when modal is active */
+.modal-card-head {
+    text-align: center;
+    border-bottom: 0px;
+    background-color: rgb(255, 255, 255);
+}
+
+.modal-background {
+    background-color: rgba(216, 216, 216, 0.753);
+}
+
 body.modal-open {
     overflow: hidden;
 }

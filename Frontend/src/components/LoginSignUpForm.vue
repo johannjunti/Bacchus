@@ -1,29 +1,46 @@
 <template>
     <div>
-        <!-- Full Name field only visible in signup mode -->
-        <b-field v-if="isSignUp" label="Full Name" :label-position="labelPosition">
-            <b-input v-model="fullName" type="text" placeholder="Enter your full name" class="full-width no-outline"></b-input>
-        </b-field>
+        <div v-if="isSignUp" class="SignUpInputs">
+            <b-field label="Full Name" :label-position="labelPosition" expanded>
+                <b-input v-model="fullName" type="text" placeholder="Enter your full name"
+                    class="full-width no-outline"></b-input>
+            </b-field>
 
-        <!-- Email field always visible -->
-        <b-field label="Email" :label-position="labelPosition">
-            <b-input type="email" class="full-width no-outline"></b-input>
-        </b-field>
+            <b-field label="Email" :label-position="labelPosition" expanded>
+                <b-input v-model="email" type="email" placeholder="Enter your email"
+                    class="full-width no-outline"></b-input>
+            </b-field>
 
-        <!-- Password field always visible -->
-        <b-field label="Password" :label-position="labelPosition">
-            <b-input v-model="password" type="password" placeholder="Enter your password" class="full-width no-outline"></b-input>
-        </b-field>
+            <b-field label="Password" :label-position="labelPosition" expanded>
+                <b-input v-model="password" type="password" placeholder="Enter your password"
+                    class="full-width no-outline"></b-input>
+            </b-field>
 
-        <!-- Confirm Password field only visible in signup mode -->
-        <b-field v-if="isSignUp" label="Confirm Password" :label-position="labelPosition">
-            <b-input v-model="confirmPassword" type="password" placeholder="Confirm your password" class="full-width no-outline"></b-input>
-        </b-field>
-        <div1>
-            <!-- Button to perform login or signup based on mode -->
-            <b-button @click="isSignUp ? signup() : login()" type="is-success" class="full-width">{{ isSignUp ? 'Sign Up' : 'Login' }}</b-button>
-            <a @click="toggleForm" class="full-width is-text">{{ isSignUp ? 'Switch to Login' : 'Switch to Sign Up' }}</a>
-        </div1>
+            <b-field label="Confirm Password" :label-position="labelPosition" expanded>
+                <b-input v-model="confirmPassword" type="password" placeholder="Confirm your password"
+                    class="full-width no-outline"></b-input>
+            </b-field>
+        </div>
+
+        <div v-else class="LoginInputs">
+            <b-field label="Email" :label-position="labelPosition" expanded>
+                <b-input v-model="email" type="email" placeholder="Enter your email"
+                    class="full-width no-outline"></b-input>
+            </b-field>
+
+            <b-field label="Password" :label-position="labelPosition" expanded>
+                <b-input v-model="password" type="password" placeholder="Enter your password"
+                    class="full-width no-outline"></b-input>
+            </b-field>
+        </div>
+
+        <!-- Button and switch -->
+        <div class="button-and-switch">
+            <b-button @click="isSignUp ? signup() : login()" type="is-success" class="sign-up-button">{{ isSignUp ? 'Sign Up' : 'Login'}}</b-button>
+            <div class="switch-container">
+                <a @click="toggleForm" class="full-width is-text">{{ isSignUp ? 'Switch to Login' : 'Switch to Sign Up'}}</a>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -35,9 +52,13 @@ export default {
             email: "",
             password: "",
             confirmPassword: "",
-            isSignUp: false,
             labelPosition: 'on-border'
         };
+
+    },
+    props: {
+        isSignUp: Boolean,
+        required: true
     },
     methods: {
         login() {
@@ -49,40 +70,39 @@ export default {
             console.log("Sign Up button clicked");
         },
         toggleForm() {
-            this.isSignUp = !this.isSignUp;
+            this.$emit('toggle-form', !this.isSignUp);
         }
     }
 };
 </script>
 
 <style scoped>
-.field {
-    margin-bottom: 20px;
+.b-field label {
+    font-size: 18px;
+    padding-bottom: 5px;
 }
 
-.field .control {
+.b-input input {
+    height: 40px;
+    font-size: 16px;
+}
+
+.b-button {
     margin-top: 10px;
 }
 
-.field .label {
-    font-size: 24px; /* Increased font size */
+.button-and-switch {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-.full-width {
-    width: calc(100% - 2px);
+.sign-up-button {
+    width: 100%;
 }
 
-.no-outline input {
-    outline: none;
-}
-
-/* Adjust positioning for buttons */
-.div1 {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    height: 100%;
-    margin-top: auto;
+.switch-container {
+    padding-top: 10px;
 }
 </style>
