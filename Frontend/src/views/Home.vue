@@ -35,54 +35,57 @@
         </div>
         <div>
             <div class="columns is-multiline is-mobile mt-4">
-                <div v-for="auction in filteredAuctions" :key="auction.productId" class="column is-one-quarter">
-                    <div class="card" :id="'card-' + auction.productId" @mouseenter="showBidButton(auction)"
-                        @mouseleave="hideBidButton(auction)">
-                        <button v-if="auction.showBidButton" class="button is-primary bid-button"
-                            @click="flipCard(auction)">
-                            Bid
-                        </button>
-                        <div v-if="!auction.isFlipped" class="card-content"
-                            :class="{ 'card-blur': auction.showBidButton }">
-                            <div class="media">
-                                <div class="media-content">
-                                    <p class="title is-5">{{ auction.productName }}</p>
-                                    <p class="subtitle is-6">{{ auction.productDescription }}</p>
-                                </div>
-                            </div>
-                            <div class="content">
-                                <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
-                            </div>
-                        </div>
-                        <div v-else class="card-content">
-                            <div class="media">
-                                <div class="media-content">
-                                    <p class="title is-5">{{ auction.productName }}</p>
-                                    <p class="subtitle is-6">{{ auction.productDescription }}</p>
-                                </div>
-                            </div>
-                            <div class="content">
-                                <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
-                                <div class="field">
-                                    <label class="label">Full Name</label>
-                                    <div class="control">
-                                        <input class="input" type="text" v-model="auction.fullName"
-                                            placeholder="Enter your full name" />
+                <transition-group name="card" tag="div" class="card-container">
+                    <div v-for="auction in filteredAuctions" :key="auction.productId" class="column is-one-quarter">
+                        <div class="card" :id="'card-' + auction.productId" @mouseenter="showBidButton(auction)"
+                            @mouseleave="hideBidButton(auction)">
+                            <button v-if="auction.showBidButton" class="button is-primary bid-button"
+                                @click="flipCard(auction)">
+                                Bid
+                            </button>
+                            <div v-if="!auction.isFlipped" class="card-content"
+                                :class="{ 'card-blur': auction.showBidButton }">
+                                <div class="media">
+                                    <div class="media-content">
+                                        <p class="title is-5">{{ auction.productName }}</p>
+                                        <p class="subtitle is-6">{{ auction.productDescription }}</p>
                                     </div>
                                 </div>
-                                <div class="field">
-                                    <label class="label">EUR</label>
-                                    <div class="control">
-                                        <input class="input" type="number" v-model="auction.eur"
-                                            placeholder="Enter your bid amount" />
+                                <div class="content">
+                                    <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
+                                </div>
+                            </div>
+                            <div v-else class="card-content">
+                                <div class="media">
+                                    <div class="media-content">
+                                        <p class="title is-5">{{ auction.productName }}</p>
+                                        <p class="subtitle is-6">{{ auction.productDescription }}</p>
                                     </div>
                                 </div>
-                                <button class="button is-success" @click="confirmBid(auction)">Confirm Bid</button>
-                                <button class="button is-warning undo-button" @click="undoBid(auction)">Undo</button>
+                                <div class="content">
+                                    <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
+                                    <div class="field">
+                                        <label class="label">Full Name</label>
+                                        <div class="control">
+                                            <input class="input" type="text" v-model="auction.fullName"
+                                                placeholder="Enter your full name" />
+                                        </div>
+                                    </div>
+                                    <div class="field">
+                                        <label class="label">EUR</label>
+                                        <div class="control">
+                                            <input class="input" type="number" v-model="auction.eur"
+                                                placeholder="Enter your bid amount" />
+                                        </div>
+                                    </div>
+                                    <button class="button is-success" @click="confirmBid(auction)">Confirm Bid</button>
+                                    <button class="button is-warning undo-button"
+                                        @click="undoBid(auction)">Undo</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </transition-group>
             </div>
         </div>
     </div>
@@ -225,10 +228,44 @@ export default {
     margin-left: 20px;
 }
 
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+}
+
 .card {
     position: relative;
     transition: transform 0.5s;
     min-width: 400px;
+}
+
+.card-enter-active {
+    animation: slide-in 0.5s ease-in-out;
+    /* Define the entering animation */
+}
+
+@keyframes slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(-50px);
+        /* Start the animation from above */
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        /* Move the card to its final position */
+    }
+}
+
+.card-leave-active {
+    transition: transform 0.5s, opacity 0.5s;
+}
+
+.card-enter,
+.card-leave-to {
+    transform: scale(0.8);
+    opacity: 0;
 }
 
 @media (max-width: 1600px) {
