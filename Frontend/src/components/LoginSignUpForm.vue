@@ -2,7 +2,7 @@
     <div>
         <div v-if="isSignUp" class="SignUpInputs">
             <b-field label="Full Name" :label-position="labelPosition" expanded>
-                <b-input v-model="fullName" type="text" placeholder="Enter your full name"
+                <b-input v-model="fullname" type="text" placeholder="Enter your full name"
                     class="full-width no-outline"></b-input>
             </b-field>
 
@@ -36,39 +36,45 @@
 
         <!-- Button and switch -->
         <div class="button-and-switch">
-            <b-button @click="isSignUp ? signup() : login()" type="is-success" class="sign-up-button">{{ isSignUp ? 'Sign Up' : 'Login'}}</b-button>
+            <b-button @click="isSignUp ? signup() : login()" type="is-success" class="sign-up-button">{{ isSignUp ?
+                'Sign Up' : 'Login' }}</b-button>
             <div class="switch-container">
-                <a @click="toggleForm" class="full-width is-text">{{ isSignUp ? 'Switch to Login' : 'Switch to Sign Up'}}</a>
+                <a @click="toggleForm" class="full-width is-text">{{ isSignUp ? 'Switch to Login' : 'Switch to SignUp'}}</a>
             </div>
         </div>
     </div>
 </template>
 
 <script>
+import { useAuthStore } from '@/store/auth.js'
+
 export default {
     data() {
         return {
-            fullName: "",
+            fullname: "",
             email: "",
             password: "",
             confirmPassword: "",
             labelPosition: 'on-border'
         };
-
     },
+
     props: {
         isSignUp: Boolean,
         required: true
     },
+
     methods: {
-        login() {
-            // Implement login logic
-            console.log("Login button clicked");
+        async login() {
+            const store = useAuthStore()
+            await store.login({ email: this.email, password: this.password });
         },
-        signup() {
-            // Implement signup logic
-            console.log("Sign Up button clicked");
+
+        async signup() {
+            const store = useAuthStore()
+            await store.signup({ fullname: this.fullname, email: this.email, password: this.password });
         },
+
         toggleForm() {
             this.$emit('toggle-form', !this.isSignUp);
         }

@@ -16,8 +16,8 @@
                 </div>
             </b-modal>
         </div>
-        <div>
-            <div class="select mb-2">
+        <div class="field has-addons">
+            <p class="control">
                 <b-dropdown aria-role="list" v-model="currentCategory">
                     <template #trigger>
                         <b-button :label="selectedCategoryLabel" :icon-right="dropdownActive ? 'menu-up' : 'menu-down'"
@@ -30,63 +30,67 @@
                         {{ category }}
                     </b-dropdown-item>
                 </b-dropdown>
-            </div>
-            <button class="button is-danger is-light" @click="resetFilter">Reset</button>
+            </p>
+            <p class="control">
+                <button class="button is-danger is-light" @click="resetFilter">Reset</button>
+            </p>
         </div>
         <div>
-            <div class="columns is-multiline is-mobile mt-4">
-                <transition-group name="card" tag="div" class="card-container">
-                    <div v-for="auction in filteredAuctions" :key="auction.productId" class="column is-one-quarter">
-                        <div class="card" :id="'card-' + auction.productId" @mouseenter="showBidButton(auction)"
-                            @mouseleave="hideBidButton(auction)">
-                            <button v-if="auction.showBidButton" class="button is-primary bid-button"
-                                @click="flipCard(auction)">
-                                Bid
-                            </button>
-                            <div v-if="!auction.isFlipped" class="card-content"
-                                :class="{ 'card-blur': auction.showBidButton }">
-                                <div class="media">
-                                    <div class="media-content">
-                                        <p class="title is-5">{{ auction.productName }}</p>
-                                        <p class="subtitle is-6">{{ auction.productDescription }}</p>
-                                    </div>
-                                </div>
-                                <div class="content">
-                                    <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
+
+            <transition-group tag="div" class="columns is-multiline is-mobile mt-4">
+                <div v-for="auction in filteredAuctions" :key="auction.productId" class="column is-one-quarter">
+                    <div class="card" :id="'card-' + auction.productId" @mouseenter="showBidButton(auction)"
+                        @mouseleave="hideBidButton(auction)">
+                        <button v-if="auction.showBidButton && isAuthenticated" class="button is-primary bid-button"
+                            @click="flipCard(auction)">
+                            Bid
+                        </button>
+                        <button v-else-if="auction.showBidButton && !isAuthenticated"
+                            class="button is-primary bid-button" @click="showLoginModal">
+                            Bid
+                        </button>
+                        <div v-if="!auction.isFlipped" class="card-content"
+                            :class="{ 'card-blur': auction.showBidButton }">
+                            <div class="media">
+                                <div class="media-content">
+                                    <p class="title is-5">{{ auction.productName }}</p>
+                                    <p class="subtitle is-6">{{ auction.productDescription }}</p>
                                 </div>
                             </div>
-                            <div v-else class="card-content">
-                                <div class="media">
-                                    <div class="media-content">
-                                        <p class="title is-5">{{ auction.productName }}</p>
-                                        <p class="subtitle is-6">{{ auction.productDescription }}</p>
+                            <div class="content">
+                                <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
+                            </div>
+                        </div>
+                        <div v-else class="card-content">
+                            <div class="media">
+                                <div class="media-content">
+                                    <p class="title is-5">{{ auction.productName }}</p>
+                                    <p class="subtitle is-6">{{ auction.productDescription }}</p>
+                                </div>
+                            </div>
+                            <div class="content">
+                                <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
+                                <div class="field">
+                                    <label class="label">Full Name</label>
+                                    <div class="control">
+                                        <input class="input" type="text" v-model="auction.fullName"
+                                            placeholder="Enter your full name" />
                                     </div>
                                 </div>
-                                <div class="content">
-                                    <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
-                                    <div class="field">
-                                        <label class="label">Full Name</label>
-                                        <div class="control">
-                                            <input class="input" type="text" v-model="auction.fullName"
-                                                placeholder="Enter your full name" />
-                                        </div>
+                                <div class="field">
+                                    <label class="label">EUR</label>
+                                    <div class="control">
+                                        <input class="input" type="number" v-model="auction.eur"
+                                            placeholder="Enter your bid amount" />
                                     </div>
-                                    <div class="field">
-                                        <label class="label">EUR</label>
-                                        <div class="control">
-                                            <input class="input" type="number" v-model="auction.eur"
-                                                placeholder="Enter your bid amount" />
-                                        </div>
-                                    </div>
-                                    <button class="button is-success" @click="confirmBid(auction)">Confirm Bid</button>
-                                    <button class="button is-warning undo-button"
-                                        @click="undoBid(auction)">Undo</button>
                                 </div>
+                                <button class="button is-success" @click="confirmBid(auction)">Confirm Bid</button>
+                                <button class="button is-warning undo-button" @click="undoBid(auction)">Undo</button>
                             </div>
                         </div>
                     </div>
-                </transition-group>
-            </div>
+                </div>
+            </transition-group>
         </div>
     </div>
 </template>
@@ -95,6 +99,8 @@
 import axios from "axios";
 import MainNav from "@/components/MainNav.vue";
 import LoginSignUpForm from "@/components/LoginSignUpForm.vue";
+import { useAuthStore } from '../store/auth.js'
+
 import "@/styles/home.css";
 
 export default {
@@ -110,9 +116,10 @@ export default {
             currentCategory: null,
             modalActive: false,
             modalTitle: "Sign Up",
-            isSignUp: false, // Initialize as false for login
+            isSignUp: false,
             isFormVisible: false,
             dropdownActive: false,
+            isAuthenticated: false,
         };
     },
     mounted() {
@@ -128,6 +135,10 @@ export default {
         async fetchAuctions() {
             try {
                 const response = await axios.get("http://localhost:3000/api/auctions");
+                if (!Array.isArray(response.data)) {
+                    console.error("Error fetching auctions:", response.data);
+                    return;
+                }
                 const newAuctions = response.data.filter(
                     (newAuction) => !this.auctions.some((auction) => auction.productId === newAuction.productId)
                 );
@@ -167,7 +178,7 @@ export default {
             auction.showBidButton = false;
         },
         confirmBid(auction) {
-
+            // Implement bid confirmation logic
         },
         undoBid(auction) {
             auction.isFlipped = false;
@@ -212,6 +223,7 @@ export default {
             auction.showBidButton = false;
         },
     },
+
     computed: {
         filteredAuctions() {
             if (!this.currentCategory) return this.auctions;
@@ -223,5 +235,3 @@ export default {
     }
 };
 </script>
-
-

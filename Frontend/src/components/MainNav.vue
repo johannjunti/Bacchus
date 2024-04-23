@@ -39,6 +39,9 @@
 </template>
 
 <script>
+import "@/styles/navbar.css";
+import { useAuthStore } from '@/store/auth.js'
+
 export default {
   data() {
     return {
@@ -60,12 +63,3 @@ export default {
   }
 };
 </script>
-
-<style>
-.navbar-menu {
-  margin-left: auto;
-  width: 100px;
-  /* Adjust the width as needed */
-  height: 105px;
-}
-</style>
