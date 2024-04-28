@@ -204,6 +204,7 @@ export default {
 
         showLoginModal() {
             console.log("Showing login modal");
+             this.$emit("login");
             this.isSignUp = false;
             this.modalTitle = "Login";
             this.modalActive = true;
@@ -217,7 +218,7 @@ export default {
             this.modalTitle = isSignUp ? "Sign Up" : "Login";
         },
         showBidButton(auction) {
-            auction.showBidButton = !auction.isFlipped;
+            auction.showBidButton = !auction.isFlipped && this.isAuthenticated;
         },
         hideBidButton(auction) {
             auction.showBidButton = false;

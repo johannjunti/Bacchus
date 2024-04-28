@@ -39,7 +39,9 @@
             <b-button @click="isSignUp ? signup() : login()" type="is-success" class="sign-up-button">{{ isSignUp ?
                 'Sign Up' : 'Login' }}</b-button>
             <div class="switch-container">
-                <a @click="toggleForm" class="full-width is-text">{{ isSignUp ? 'Switch to Login' : 'Switch to SignUp'}}</a>
+                <a @click="toggleForm" class="full-width is-text">
+                    {{ isSignUp ? 'Switch to Login' : 'Switch to SignUp' }}
+                </a>
             </div>
         </div>
     </div>
@@ -66,13 +68,28 @@ export default {
 
     methods: {
         async login() {
-            const store = useAuthStore()
-            await store.login({ email: this.email, password: this.password });
+            try {
+                console.log('Login method called');
+                console.log('Email:', this.email); // Add this line
+                console.log('Password:', this.password); // Add this line
+                const authStore = useAuthStore();
+                await authStore.login({ email: this.email, password: this.password });
+                this.modalActive = false;
+                console.log('Login successful'); // Add this line
+            } catch (error) {
+                console.error('Error logging in:', error);
+            }
         },
 
         async signup() {
-            const store = useAuthStore()
-            await store.signup({ fullname: this.fullname, email: this.email, password: this.password });
+            try {
+                console.log('Signup method called');
+                const authStore = useAuthStore();
+                await authStore.signup({ fullname: this.fullname, email: this.email, password: this.password });
+                this.modalActive = false;
+            } catch (error) {
+                console.error('Error signing up:', error);
+            }
         },
 
         toggleForm() {

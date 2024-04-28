@@ -10,10 +10,12 @@ export const useAuthStore = defineStore('store', {
   actions: {
     async login({ email, password }) {
       try {
+        console.log('Login method called in authentication store');
         const response = await axios.post("http://localhost:3000/api/login", { email, password });
         const { user } = response.data;
         this.isAuthenticated = true;
         this.user = user;
+        console.log('Login successful in authentication store');
       } catch (error) {
         console.error('Error:', error);
       }

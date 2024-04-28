@@ -2,7 +2,9 @@
   "name": "backend",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "nodemon . || node index.js",
+    "generate": "npx prisma generate",
+    "migrate": "npx prisma migrate dev"
   },
   "dependencies": {
     "@prisma/client": "^5.12.1",
@@ -15,7 +17,7 @@
   },
   "devDependencies": {
     "drizzle-kit": "^0.20.2",
-    "nodemon": "^3.0.3",
+    "nodemon": "^3.1.0",
     "prisma": "^5.9.1"
   }
 }
