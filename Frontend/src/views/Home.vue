@@ -1,7 +1,7 @@
 <template>
     <div>
         <div>
-            <MainNav @signup="showSignUpModal" @login="showLoginModal" />
+            <MainNav @login="showLoginModal" @signup="showSignUpModal" @logout="closeModals" />
             <b-modal v-model="modalActive" :can-cancel="['escape', 'click', 'outside']">
                 <div class="modal-container">
                     <div class="modal-card">
@@ -10,7 +10,8 @@
                             <button class="delete" aria-label="close" @click="closeModals"></button>
                         </header>
                         <section class="modal-card-body">
-                            <LoginSignUpForm :is-sign-up="isSignUp" @toggle-form="toggleForm" />
+                            <LoginSignUpForm :is-sign-up="isSignUp" @toggle-form="toggleForm"
+                                @login-success="closeModals" />
                         </section>
                     </div>
                 </div>
@@ -80,12 +81,12 @@
                                 <div class="field">
                                     <label class="label">EUR</label>
                                     <div class="control">
-                                        <input class="input" type="number" v-model="auction.eur"
+                                        <input class="input" type="number" v-model="bid_amount"
                                             placeholder="Enter your bid amount" />
                                     </div>
                                 </div>
-                                <button class="button is-success" @click="confirmBid(auction)">Confirm Bid</button>
-                                <button class="button is-warning undo-button" @click="undoBid(auction)">Undo</button>
+                                <button class="button is-success" @click="confirmBid(auction)">Place bid</button>
+                                <button class="button is-warning undo-button" @click="closeBid(auction)">Close</button>
                             </div>
                         </div>
                     </div>
@@ -96,11 +97,11 @@
 </template>
 
 <script>
+
 import axios from "axios";
 import MainNav from "@/components/MainNav.vue";
 import LoginSignUpForm from "@/components/LoginSignUpForm.vue";
 import { useAuthStore } from '../store/auth.js'
-
 import "@/styles/home.css";
 
 export default {
@@ -119,17 +120,8 @@ export default {
             isSignUp: false,
             isFormVisible: false,
             dropdownActive: false,
-            isAuthenticated: false,
+            bid_amount: null
         };
-    },
-    mounted() {
-        this.fetchAuctions();
-        setInterval(() => {
-            this.updateAuctionEndDates();
-        }, 1000);
-        setInterval(() => {
-            this.fetchAuctions();
-        }, 5000);
     },
     methods: {
         async fetchAuctions() {
@@ -177,10 +169,30 @@ export default {
             auction.isFlipped = !auction.isFlipped;
             auction.showBidButton = false;
         },
-        confirmBid(auction) {
-            // Implement bid confirmation logic
+        async confirmBid(auction) {
+            try {
+                if (!this.bid_amount) {
+                    console.error("Bid amount is empty");
+                    return;
+                }
+
+                const user = useAuthStore().user;
+                const response = await axios.post("http://localhost:3000/api/auctions/bid", {
+                    productId: auction.productId,
+                    bid_amount: this.bid_amount,
+                    user_id: user.id, // Use user_id instead of User
+                    productName: auction.productName,
+                    productDescription: auction.productDescription,
+                    productCategory: auction.productCategory,
+                    biddingEndDate: auction.biddingEndDate
+                });
+
+                console.log("Bid placed successfully:", response.data);
+            } catch (error) {
+                console.error("Error placing bid:", error);
+            }
         },
-        undoBid(auction) {
+        closeBid(auction) {
             auction.isFlipped = false;
         },
         updateAuctionEndDates() {
@@ -204,7 +216,7 @@ export default {
 
         showLoginModal() {
             console.log("Showing login modal");
-             this.$emit("login");
+            this.$emit("login");
             this.isSignUp = false;
             this.modalTitle = "Login";
             this.modalActive = true;
@@ -218,7 +230,7 @@ export default {
             this.modalTitle = isSignUp ? "Sign Up" : "Login";
         },
         showBidButton(auction) {
-            auction.showBidButton = !auction.isFlipped && this.isAuthenticated;
+            auction.showBidButton = !auction.isFlipped;
         },
         hideBidButton(auction) {
             auction.showBidButton = false;
@@ -233,6 +245,19 @@ export default {
         selectedCategoryLabel() {
             return this.currentCategory ? this.currentCategory : 'All Categories';
         },
-    }
+        isAuthenticated() {
+            return useAuthStore().isAuthenticated;
+        },
+    },
+
+    created() {
+        this.fetchAuctions();
+        setInterval(() => {
+            this.updateAuctionEndDates();
+        }, 1000);
+        setInterval(() => {
+            this.fetchAuctions();
+        }, 5000);
+    },
 };
 </script>

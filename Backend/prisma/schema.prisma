@@ -14,21 +14,22 @@ datasource db {
 }
 
 model User {
-  id          Int           @id @default(autoincrement())
-  fullname    String?
-  email       String?       @unique
-  password    String?
-  AuctionItem AuctionItem[]
+  id                   Int                    @id @default(autoincrement())
+  fullname             String
+  email                String                 @unique
+  password             String
+  AuctionItem          AuctionItem[]
+  AuctionItemBidAmount AuctionItemBidAmount[]
 }
 
 model AuctionItem {
-  id                   Int                    @id @default(autoincrement())
-  productId            Int                    @unique
+  id                   String                 @id
+  productId            String                 @unique
   productName          String
   productDescription   String
   productCategory      String
-  biddingEndDate       Int
-  bid_time             Int
+  biddingEndDate       DateTime
+  bid_time             DateTime               @updatedAt
   bid_amount           Int
   user_id              Int
   User                 User                   @relation(fields: [user_id], references: [id])
@@ -38,6 +39,8 @@ model AuctionItem {
 model AuctionItemBidAmount {
   id             Int         @id @default(autoincrement())
   bid_amount     Int
-  auctionItem_id Int
+  auctionItem_id String
+  user_id        Int
+  User           User        @relation(fields: [user_id], references: [id])
   AuctionItem    AuctionItem @relation(fields: [auctionItem_id], references: [id])
 }

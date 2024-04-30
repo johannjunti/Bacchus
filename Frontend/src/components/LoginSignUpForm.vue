@@ -69,13 +69,12 @@ export default {
     methods: {
         async login() {
             try {
+                await useAuthStore().login({ email: this.email, password: this.password });
                 console.log('Login method called');
-                console.log('Email:', this.email); // Add this line
-                console.log('Password:', this.password); // Add this line
-                const authStore = useAuthStore();
-                await authStore.login({ email: this.email, password: this.password });
-                this.modalActive = false;
-                console.log('Login successful'); // Add this line
+                console.log('Email:', this.email);
+                console.log('Password:', this.password);
+                this.$emit('login-success');
+                console.log('Login successful');
             } catch (error) {
                 console.error('Error logging in:', error);
             }
@@ -86,7 +85,7 @@ export default {
                 console.log('Signup method called');
                 const authStore = useAuthStore();
                 await authStore.signup({ fullname: this.fullname, email: this.email, password: this.password });
-                this.modalActive = false;
+                this.$emit('login-success');
             } catch (error) {
                 console.error('Error signing up:', error);
             }
