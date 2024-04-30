@@ -6,6 +6,7 @@ npm run dev
 ## Backend
 
 npm install
+npm start
 
 
 ## Database changes
