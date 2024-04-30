@@ -1,11 +1,12 @@
 # Frontend
 
-npm install
-npm run dev
+    npm install
+    npm run dev
 
 ## Backend
 
-npm install
+    npm install
+    npm start
 
 
 ## Database changes
