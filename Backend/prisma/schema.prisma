@@ -39,6 +39,7 @@ model AuctionItem {
 model AuctionItemBidAmount {
   id             Int         @id @default(autoincrement())
   bid_amount     Int
+  bid_time       DateTime    @updatedAt
   auctionItem_id String
   user_id        Int
   User           User        @relation(fields: [user_id], references: [id])

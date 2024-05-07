@@ -37,7 +37,6 @@
             </p>
         </div>
         <div>
-
             <transition-group tag="div" class="columns is-multiline is-mobile mt-4">
                 <div v-for="auction in filteredAuctions" :key="auction.productId" class="column is-one-quarter">
                     <div class="card" :id="'card-' + auction.productId" @mouseenter="showBidButton(auction)"
@@ -72,21 +71,16 @@
                             <div class="content">
                                 <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
                                 <div class="field">
-                                    <label class="label">Full Name</label>
-                                    <div class="control">
-                                        <input class="input" type="text" v-model="auction.fullName"
-                                            placeholder="Enter your full name" />
-                                    </div>
-                                </div>
-                                <div class="field">
                                     <label class="label">EUR</label>
                                     <div class="control">
                                         <input class="input" type="number" v-model="bid_amount"
-                                            placeholder="Enter your bid amount" />
+                                            placeholder="Enter your bid amount"
+                                            :disabled="auction.previousBidAmount !== null && bid_amount < auction.previousBidAmount" />
                                     </div>
                                 </div>
                                 <button class="button is-success" @click="confirmBid(auction)">Place bid</button>
                                 <button class="button is-warning undo-button" @click="closeBid(auction)">Close</button>
+                                <button v-if="userHasBid(auction)" class="button is-danger" @click="removeBid(auction)">Remove Bid</button>
                             </div>
                         </div>
                     </div>
@@ -120,7 +114,8 @@ export default {
             isSignUp: false,
             isFormVisible: false,
             dropdownActive: false,
-            bid_amount: null
+            bid_amount: null,
+            showWarning: false
         };
     },
     methods: {
@@ -180,7 +175,7 @@ export default {
                 const response = await axios.post("http://localhost:3000/api/auctions/bid", {
                     productId: auction.productId,
                     bid_amount: this.bid_amount,
-                    user_id: user.id, // Use user_id instead of User
+                    user_id: user.id,
                     productName: auction.productName,
                     productDescription: auction.productDescription,
                     productCategory: auction.productCategory,
@@ -188,10 +183,36 @@ export default {
                 });
 
                 console.log("Bid placed successfully:", response.data);
+
+                auction.isFlipped = false;
+
             } catch (error) {
                 console.error("Error placing bid:", error);
             }
         },
+        async removeBid(auction) {
+            try {
+                const user = useAuthStore().user;
+                const response = await axios.delete("http://localhost:3000/api/auctions/bid", {
+                    data: {
+                        productId: auction.productId,
+                        user_id: user.id
+                    }
+                });
+
+                console.log(response.data);
+
+                auction.bid_amount = 0; // Update bid_amount of the auction
+
+            } catch (error) {
+                console.error("Error removing bid:", error);
+            }
+        },
+        userHasBid(auction) {
+            console.log('Checking if user has bid:', auction.bid_amount);
+            return auction.bid_amount > 0;
+        },
+
         closeBid(auction) {
             auction.isFlipped = false;
         },
@@ -235,6 +256,9 @@ export default {
         hideBidButton(auction) {
             auction.showBidButton = false;
         },
+        closeWarning() {
+            this.showWarning = false;
+        }
     },
 
     computed: {
