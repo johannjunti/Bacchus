@@ -128,74 +128,74 @@ router.post('/bid', async (req, res) => {
   }
 });
 
-router.delete('/bid', async (req, res) => {
+router.delete('/removeBid', async (req, res) => {
   try {
-    console.log('Received bid removal request:', req.body);
+      console.log('Received bid removal request:', req.body);
 
-    const { productId, user_id } = req.body;
+      const { productId, user_id } = req.body;
 
-    const existingBid = await prisma.auctionItemBidAmount.findFirst({
-      where: {
-        auctionItem_id: productId,
-        user_id: user_id
-      }
-    });
-
-    if (!existingBid) {
-      console.log('No existing bid found for removal');
-      res.status(404).json({ error: 'No existing bid found for removal' });
-      return;
-    }
-
-    // Step 4: Removing a Bid
-    // Find the auctionItemBidAmount associated with the user and the auction item
-    // If the bid to be removed is the only bid for the item, delete the auctionItem
-    // If there are other bids, update the auctionItem with the next highest bid
-    const otherBids = await prisma.auctionItemBidAmount.findMany({
-      where: {
-        auctionItem_id: productId,
-        NOT: {
-          user_id: user_id
-        }
-      }
-    });
-
-    if (otherBids.length === 0) {
-      console.log('Removing the only bid for this item');
-      await prisma.auctionItem.delete({
-        where: {
-          id: productId
-        }
+      // Find the bid associated with the user and the auction item
+      const existingBid = await prisma.auctionItemBidAmount.findFirst({
+          where: {
+              auctionItem_id: productId,
+              user_id: user_id
+          }
       });
-    } else {
-      console.log('Updating auction item with next highest bid');
-      const nextHighestBid = Math.max(...otherBids.map(bid => bid.bid_amount));
-      const nextHighestBidObj = otherBids.find(bid => bid.bid_amount === nextHighestBid);
 
-      // Update the auctionItem with the next highest bid
-      await prisma.auctionItem.update({
-        where: {
-          id: productId
-        },
-        data: {
-          bid_amount: nextHighestBid,
-          user_id: nextHighestBidObj.user_id
-        }
-      });
-    }
-
-    // Delete the bid from the auctionItemBidAmount table
-    await prisma.auctionItemBidAmount.deleteMany({
-      where: {
-        auctionItem_id: productId,
-        user_id: user_id
+      if (!existingBid) {
+          console.log('No existing bid found for removal');
+          return res.status(404).json({ error: 'No existing bid found for removal' });
       }
-    });
 
-    res.json({ message: 'Bid removed successfully' });
+      // Delete the bid from the auctionItemBidAmount table
+      await prisma.auctionItemBidAmount.delete({
+          where: {
+              id: existingBid.id
+          }
+      });
+
+      // Check if this was the only bid for the item
+      const otherBids = await prisma.auctionItemBidAmount.findMany({
+          where: {
+              auctionItem_id: productId,
+              NOT: {
+                  user_id: user_id
+              }
+          }
+      });
+
+      if (otherBids.length === 0) {
+          // If this was the only bid, delete the auctionItem as well
+          await prisma.auctionItem.delete({
+              where: {
+                  id: productId
+              }
+          });
+      }
+
+      // Respond with success message
+      res.json({ message: 'Bid removed successfully' });
 
   } catch (error) {
-    console.error('Error removing bid:', error);
+      console.error('Error removing bid:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/userAuctions', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const userAuctions = await prisma.auctionItem.findMany({
+      where: {
+        user_id: parseInt(userId), // Parse userId to integer if needed
+      },
+      include: {
+        AuctionItemBidAmount: true,
+      },
+    });
+    res.json(userAuctions);
+  } catch (error) {
+    console.error('Error fetching user auctions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

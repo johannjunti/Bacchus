@@ -80,7 +80,9 @@
                                 </div>
                                 <button class="button is-success" @click="confirmBid(auction)">Place bid</button>
                                 <button class="button is-warning undo-button" @click="closeBid(auction)">Close</button>
-                                <button v-if="userHasBid(auction)" class="button is-danger" @click="removeBid(auction)">Remove Bid</button>
+                                <button v-if="userHasBid(auction)" class="button is-danger"
+                                    @click="removeBid(auction)">Remove
+                                    Bid</button>
                             </div>
                         </div>
                     </div>
@@ -115,7 +117,8 @@ export default {
             isFormVisible: false,
             dropdownActive: false,
             bid_amount: null,
-            showWarning: false
+            showWarning: false,
+            userAuctions: []
         };
     },
     methods: {
@@ -182,10 +185,9 @@ export default {
                     biddingEndDate: auction.biddingEndDate
                 });
 
-                console.log("Bid placed successfully:", response.data);
 
                 auction.isFlipped = false;
-
+                this.fetchUserAuctions()
             } catch (error) {
                 console.error("Error placing bid:", error);
             }
@@ -193,7 +195,7 @@ export default {
         async removeBid(auction) {
             try {
                 const user = useAuthStore().user;
-                const response = await axios.delete("http://localhost:3000/api/auctions/bid", {
+                const response = await axios.delete("http://localhost:3000/api/auctions/removeBid", {
                     data: {
                         productId: auction.productId,
                         user_id: user.id
@@ -202,17 +204,40 @@ export default {
 
                 console.log(response.data);
 
-                auction.bid_amount = 0; // Update bid_amount of the auction
+                auction.bid_amount = 0;
+                auction.isFlipped = false;
+
+                // After successful bid removal, fetch updated user auctions
+                await this.fetchUserAuctions();
 
             } catch (error) {
                 console.error("Error removing bid:", error);
             }
         },
-        userHasBid(auction) {
-            console.log('Checking if user has bid:', auction.bid_amount);
-            return auction.bid_amount > 0;
-        },
+        async fetchUserAuctions() {
+            try {
+                const user = useAuthStore().user;
+                if (!user) {
+                    console.error('User is not authenticated');
+                    return;
+                }
+                const response = await axios.get(`http://localhost:3000/api/auctions/userAuctions?userId=${user.id}`);
+                if (!Array.isArray(response.data)) {
+                    console.error('Error fetching user auctions:', response.data);
+                    return;
+                }
 
+                this.userAuctions = response.data;
+            } catch (error) {
+                console.error('Error fetching user auctions:', error);
+            }
+        },
+        userHasBid(auction) {
+            console.log('Checking if user has bid:', this.userAuctions);
+            const hasBid = this.userAuctions.some(item => item.productId === auction.productId);
+            console.log('User has bid:', hasBid);
+            return hasBid;
+        },
         closeBid(auction) {
             auction.isFlipped = false;
         },
@@ -229,14 +254,12 @@ export default {
             });
         },
         showSignUpModal() {
-            console.log("Showing sign-up modal");
             this.isSignUp = true;
             this.modalTitle = "Sign Up";
             this.modalActive = true;
         },
 
         showLoginModal() {
-            console.log("Showing login modal");
             this.$emit("login");
             this.isSignUp = false;
             this.modalTitle = "Login";
