@@ -67,22 +67,22 @@
                                     <p class="title is-5">{{ auction.productName }}</p>
                                     <p class="subtitle is-6">{{ auction.productDescription }}</p>
                                 </div>
+                                <button class="delete"  aria-label="close" @click="closeBid(auction)"></button>
                             </div>
                             <div class="content">
                                 <p>Remaining Time: {{ getRemainingTime(auction) }}</p>
                                 <div class="field">
                                     <label class="label">EUR</label>
                                     <div class="control">
-                                        <input class="input" type="number" v-model="bid_amount"
-                                            placeholder="Enter your bid amount"
-                                            :disabled="auction.previousBidAmount !== null && bid_amount < auction.previousBidAmount" />
+                                        <!-- Bind the input to the bid amount specific to the current auction -->
+                                        <input class="input" type="number" v-model="auctionBidAmount[auction.productId]"
+                                        placeholder="Enter your bid amount"
+                                        :disabled="auction.previousBidAmount !== null && auctionBidAmount[auction.productId] < auction.previousBidAmount" />
                                     </div>
                                 </div>
-                                <button class="button is-success" @click="confirmBid(auction)">Place bid</button>
-                                <button class="button is-warning undo-button" @click="closeBid(auction)">Close</button>
-                                <button v-if="userHasBid(auction)" class="button is-danger"
-                                    @click="removeBid(auction)">Remove
-                                    Bid</button>
+                                <button v-if="!userHasBid(auction)"class="button is-success" @click="confirmBid(auction)">Place bid</button>
+                                <button v-if="userHasBid(auction)"class="button is-warning" @click="confirmBid(auction)">Update bid</button>
+                                <button v-if="userHasBid(auction)" class="button is-danger" @click="removeBid(auction)">Remove Bid</button>
                             </div>
                         </div>
                     </div>
@@ -118,7 +118,8 @@ export default {
             dropdownActive: false,
             bid_amount: null,
             showWarning: false,
-            userAuctions: []
+            userAuctions: [],
+            auctionBidAmount: {}
         };
     },
     methods: {
@@ -165,11 +166,11 @@ export default {
         },
         flipCard(auction) {
             auction.isFlipped = !auction.isFlipped;
-            auction.showBidButton = false;
+            auction.showBidButton = false; 
         },
         async confirmBid(auction) {
             try {
-                if (!this.bid_amount) {
+                if (!this.auctionBidAmount[auction.productId]) {
                     console.error("Bid amount is empty");
                     return;
                 }
@@ -177,7 +178,7 @@ export default {
                 const user = useAuthStore().user;
                 const response = await axios.post("http://localhost:3000/api/auctions/bid", {
                     productId: auction.productId,
-                    bid_amount: this.bid_amount,
+                    bid_amount: this.auctionBidAmount[auction.productId],
                     user_id: user.id,
                     productName: auction.productName,
                     productDescription: auction.productDescription,
